@@ -27,7 +27,7 @@ export async function sendContactEmail({ name, email, subject, message, date }) 
 
     // Email content formatting (using rich CSS design for a professional hacker alert style)
     const mailOptions = {
-      from: `"${name} (Portfolio Inquiry)" <${smtpUser}>`,
+      from: smtpUser,
       to: smtpTo,
       replyTo: email,
       subject: `[Cyber Inquiry] ${subject}`,
