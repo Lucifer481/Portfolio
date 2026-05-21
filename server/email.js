@@ -1,7 +1,9 @@
-import { config } from 'dotenv';
-import sgMail from '@sendgrid/mail';
+import dotenv from 'dotenv';
+import { Resend } from 'resend';
 
-config();
+dotenv.config();
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function sendContactEmail({
   name,
@@ -10,63 +12,34 @@ export async function sendContactEmail({
   message,
   date,
 }) {
-  const sendgridApiKey = process.env.SENDGRID_API_KEY;
-  const fromEmail = process.env.SENDGRID_FROM_EMAIL;
-  const toEmail = process.env.SENDGRID_TO_EMAIL || fromEmail;
-
-  if (!sendgridApiKey || !fromEmail || !toEmail) {
-    console.warn('[SendGrid] Missing configuration.');
-    return false;
-  }
-
-  sgMail.setApiKey(sendgridApiKey);
-
-  const textBody = `
-New Portfolio Inquiry
-
-Date: ${date}
-From: ${name} <${email}>
-Subject: ${subject}
-
-Message:
-${message}
-`;
-
-  const htmlBody = `
-    <div style="font-family:sans-serif;padding:20px;">
-      <h2>New Portfolio Inquiry</h2>
-
-      <p><strong>Date:</strong> ${date}</p>
-      <p><strong>From:</strong> ${name} (${email})</p>
-      <p><strong>Subject:</strong> ${subject}</p>
-
-      <hr />
-
-      <p>${message}</p>
-    </div>
-  `;
-
   try {
-    await sgMail.send({
-      to: toEmail,
-      from: fromEmail,
-      replyTo: email,
+    const response = await resend.emails.send({
+      from: 'Portfolio Contact <onboarding@resend.dev>',
+      to: process.env.RESEND_TO,
+      reply_to: email,
       subject: `[Portfolio Contact] ${subject}`,
-      text: textBody,
-      html: htmlBody,
+
+      html: `
+        <div style="font-family:sans-serif;padding:20px;">
+          <h2>New Portfolio Message</h2>
+
+          <p><strong>Date:</strong> ${date}</p>
+          <p><strong>Name:</strong> ${name}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          <p><strong>Subject:</strong> ${subject}</p>
+
+          <hr />
+
+          <p>${message}</p>
+        </div>
+      `,
     });
 
-    console.log('[SendGrid] Email sent successfully');
+    console.log('[Resend] Email sent:', response);
 
     return true;
   } catch (error) {
-    console.error('[SendGrid] Error sending email');
-
-    if (error.response) {
-      console.error(error.response.body);
-    } else {
-      console.error(error.message);
-    }
+    console.error('[Resend] Email failed:', error);
 
     return false;
   }
