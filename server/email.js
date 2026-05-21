@@ -1,19 +1,19 @@
 import { config } from 'dotenv';
+import sgMail from '@sendgrid/mail';
 
 config();
 
 export async function sendContactEmail({ name, email, subject, message, date }) {
-  // SMTP configuration from environment variables
-  const smtpHost = process.env.SMTP_HOST;
-  const smtpPort = Number(process.env.SMTP_PORT) || 587;
-  const smtpUser = process.env.SMTP_USER;
-  const smtpPass = process.env.SMTP_PASSWORD;
-  const emailRecipient = process.env.SMTP_TO || smtpUser;
+  const sendgridApiKey = process.env.SENDGRID_API_KEY;
+  const fromEmail = process.env.SENDGRID_FROM_EMAIL;
+  const toEmail = process.env.SENDGRID_TO_EMAIL || fromEmail;
 
-  if (!smtpHost || !smtpUser || !smtpPass || !emailRecipient) {
-    console.warn('[SMTP] Missing configuration – email not sent.');
+  if (!sendgridApiKey || !fromEmail || !toEmail) {
+    console.warn('[SendGrid] Missing configuration – email not sent.');
     return false;
   }
+
+  sgMail.setApiKey(sendgridApiKey);
 
   const textBody = `
 New Portfolio Inquiry Received!
@@ -46,29 +46,18 @@ ${message}
   `;
 
   try {
-    const nodemailer = require('nodemailer');
-    const transporter = nodemailer.createTransport({
-      host: smtpHost,
-      port: smtpPort,
-      secure: smtpPort === 465, // true for 465, false for other ports
-      auth: {
-        user: smtpUser,
-        pass: smtpPass,
-      },
-    });
-
-    await transporter.sendMail({
-      from: smtpUser,
-      to: emailRecipient,
+    await sgMail.send({
+      from: fromEmail,
+      to: toEmail,
       replyTo: email,
       subject: `[Contact] ${subject}`,
       text: textBody,
       html: htmlBody,
     });
-    console.log('[SMTP] Email sent successfully');
+    console.log('[SendGrid] Email sent successfully');
     return true;
   } catch (e) {
-    console.error('[SMTP] Unexpected error while sending email:', e);
+    console.error('[SendGrid] Unexpected error while sending email:', e);
     return false;
   }
 }
