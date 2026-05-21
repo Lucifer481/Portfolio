@@ -68,7 +68,7 @@ const About = () => {
             <div className="aspect-[4/5] rounded-3xl overflow-hidden glass-card p-2 transform-gpu border border-cyan-500/20 holo-overlay shadow-[0_0_30px_rgba(0,255,255,0.1)]">
               <div className="w-full h-full bg-neutral-950 rounded-2xl overflow-hidden relative group">
                 <img
-                  src="/profile/j.jpeg"
+                  src="/profile/pp.png"
                   alt="Sushan Bhadel"
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   loading="lazy"
