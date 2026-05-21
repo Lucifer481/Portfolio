@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Mail, MessageCircle, Send } from 'lucide-react';
 import { FaGithub, FaLinkedin } from 'react-icons/fa';
+import { API_BASE } from '../config.js';
 
 const Contact = () => {
   const [formData, setFormData] = React.useState({
@@ -31,24 +32,46 @@ const Contact = () => {
     setStatus({ type: '', message: '' });
 
     try {
-      const response = await fetch('/api/contact', {
+      // Use AbortController to handle Render cold-start timeouts (~50-150s)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
+      const response = await fetch(`${API_BASE}/api/contact`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData),
+        signal: controller.signal,
       });
 
-      const data = await response.json();
+      clearTimeout(timeoutId);
 
-      if (response.ok) {
-        setStatus({ type: 'success', message: 'Message sent successfully! Forwarded to inbox & Gmail.' });
-        setFormData({ name: '', email: '', subject: '', message: '' });
-      } else {
-        throw new Error(data.error || 'Failed to submit message.');
+      // Guard against non-JSON responses (HTML error pages, empty bodies, etc.)
+      // This is what causes "Unexpected end of JSON input"
+      if (!response.ok) {
+        const text = await response.text();
+        let errorMsg = `Server error: ${response.status}`;
+        try {
+          const errData = JSON.parse(text);
+          errorMsg = errData.error || errorMsg;
+        } catch {
+          // Response was HTML or empty — not JSON
+        }
+        throw new Error(errorMsg);
       }
+
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : {};
+
+      setStatus({ type: 'success', message: 'Message sent successfully! Forwarded to inbox & Gmail.' });
+      setFormData({ name: '', email: '', subject: '', message: '' });
     } catch (err) {
-      setStatus({ type: 'error', message: err.message || 'Error connecting to server.' });
+      if (err.name === 'AbortError') {
+        setStatus({ type: 'error', message: 'Request timed out. The server may be waking up — please try again in a moment.' });
+      } else {
+        setStatus({ type: 'error', message: err.message || 'Error connecting to server.' });
+      }
     } finally {
       setIsSubmitting(false);
     }
