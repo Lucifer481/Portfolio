@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Terminal, Shield, ShieldAlert, Target, Palette, Video, Cpu } from 'lucide-react';
 import { FaReact, FaJs } from 'react-icons/fa';
+import { API_BASE } from '../config.js';
 
 const skillCategories = [
   {
@@ -85,7 +86,7 @@ const Skills = () => {
   const [skills, setSkills] = React.useState(skillCategories);
 
   React.useEffect(() => {
-    fetch('/api/skills')
+    fetch(`${API_BASE}/api/skills`)
       .then(res => {
         if (!res.ok) throw new Error('API issue');
         return res.json();
