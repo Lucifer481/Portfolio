@@ -11,7 +11,20 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+// Explicit CORS config — allow the production frontend domain and localhost for dev
+const corsOptions = {
+  origin: [
+    'https://www.sushanbhadel.com.np',
+    'https://sushanbhadel.com.np',
+    'http://localhost:5173',    // Vite dev server
+    'http://localhost:4173',    // Vite preview
+  ],
+  methods: 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+  credentials: true,
+  optionsSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Initialize database tables and seed defaults
