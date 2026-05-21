@@ -1,4 +1,4 @@
-import { config } from 'dotenv';
+
 config();
 
 export async function sendContactEmail({ name, email, subject, message, date }) {
