@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { API_BASE } from '../config.js';
 
 const journeyData = [
   {
@@ -48,7 +49,7 @@ const Experience = () => {
   const [experiences, setExperiences] = React.useState(journeyData);
 
   React.useEffect(() => {
-    fetch('/api/experiences')
+    fetch(`${API_BASE}/api/experiences`)
       .then(res => {
         if (!res.ok) throw new Error('API issue');
         return res.json();
