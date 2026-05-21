@@ -11,6 +11,7 @@ import { z } from 'zod';
 
 dotenv.config();
 
+const app = express();
 const PORT = process.env.PORT || 5000;
 // Trust the first proxy (Render) so X‑Forwarded‑For is respected by rate‑limit
 app.set('trust proxy', 1);
