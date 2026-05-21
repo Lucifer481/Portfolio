@@ -83,6 +83,7 @@ app.get('/', (req, res) => {
   });
 });
 
+// GET PROJECTS
 app.get('/api/projects', async (req, res) => {
   try {
     const db = await getDbConnection();
@@ -108,6 +109,7 @@ app.get('/api/projects', async (req, res) => {
   }
 });
 
+// CONTACT
 app.post('/api/contact', contactLimiter, async (req, res) => {
   const validation = contactSchema.safeParse(req.body);
 
@@ -162,6 +164,7 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
   }
 });
 
+// ADMIN LOGIN
 app.post('/api/admin/login', async (req, res) => {
   const { username, password } = req.body;
 
@@ -219,6 +222,7 @@ app.post('/api/admin/login', async (req, res) => {
   }
 });
 
+// GET MESSAGES
 app.get('/api/admin/messages', authenticateToken, async (req, res) => {
   try {
     const db = await getDbConnection();
@@ -239,6 +243,7 @@ app.get('/api/admin/messages', authenticateToken, async (req, res) => {
   }
 });
 
+// ERROR HANDLER
 app.use((err, req, res, next) => {
   console.error(err);
 
@@ -247,6 +252,7 @@ app.use((err, req, res, next) => {
   });
 });
 
+// START SERVER
 async function startServer() {
   try {
     await initDatabase();
@@ -256,6 +262,7 @@ async function startServer() {
     });
   } catch (error) {
     console.error('[Server] Startup failed:', error);
+
     process.exit(1);
   }
 }
