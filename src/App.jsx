@@ -20,12 +20,13 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
 
+  // On initial load, if URL contains '#contact', replace it with '/' to avoid hash in URL
   useEffect(() => {
-    const handlePopState = () => {
-      setCurrentPath(window.location.pathname);
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    if (window.location.hash === '#contact') {
+      // Remove the hash and navigate to home without reloading
+      window.history.replaceState(null, '', '/');
+      setCurrentPath('/');
+    }
   }, []);
 
   const handleGoHome = () => {
