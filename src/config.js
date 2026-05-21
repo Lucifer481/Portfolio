@@ -4,5 +4,5 @@
 // relying on _redirects proxy rewrites (which can fail and return
 // HTML instead of JSON, causing "Unexpected end of JSON input")
 export const API_BASE = import.meta.env.PROD
-  ? 'https://portfolio-k0e8.onrender.com'
+  ? 'https://portfolio1-8db4.onrender.com'
   : '';
