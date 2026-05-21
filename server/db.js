@@ -12,17 +12,16 @@ const dbPath = path.join(__dirname, 'database.sqlite');
 export async function getDbConnection() {
   return open({
     filename: dbPath,
-    driver: sqlite3.Database
+    driver: sqlite3.Database,
   });
 }
 
 export async function initDatabase() {
   const db = await getDbConnection();
 
-  // Enable foreign keys
   await db.exec('PRAGMA foreign_keys = ON');
 
-  // USERS TABLE
+  // USERS
   await db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -31,7 +30,7 @@ export async function initDatabase() {
     )
   `);
 
-  // MESSAGES TABLE
+  // MESSAGES
   await db.exec(`
     CREATE TABLE IF NOT EXISTS messages (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -44,7 +43,7 @@ export async function initDatabase() {
     )
   `);
 
-  // PROJECTS TABLE
+  // PROJECTS
   await db.exec(`
     CREATE TABLE IF NOT EXISTS projects (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -58,7 +57,7 @@ export async function initDatabase() {
     )
   `);
 
-  // SKILLS TABLE
+  // SKILLS
   await db.exec(`
     CREATE TABLE IF NOT EXISTS skills (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -70,7 +69,7 @@ export async function initDatabase() {
     )
   `);
 
-  // EXPERIENCES TABLE
+  // EXPERIENCES
   await db.exec(`
     CREATE TABLE IF NOT EXISTS experiences (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -82,9 +81,9 @@ export async function initDatabase() {
     )
   `);
 
-  console.log('[DB] Tables initialized successfully.');
+  console.log('[DB] Tables initialized');
 
-  // CREATE DEFAULT ADMIN
+  // DEFAULT ADMIN
   const adminUser = process.env.ADMIN_USERNAME || 'admin';
   const adminPass = process.env.ADMIN_PASSWORD || 'admin123';
 
@@ -101,7 +100,7 @@ export async function initDatabase() {
       [adminUser, hashedPassword]
     );
 
-    console.log(`[DB] Default admin "${adminUser}" created.`);
+    console.log('[DB] Default admin created');
   }
 
   await db.close();
