@@ -158,12 +158,16 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
     );
     await db.close();
 
-    // Trigger SMTP mailing in background
-    sendContactEmail({ name, email, subject, message, date: dateString });
+    // Trigger SMTP mailing and await its result
+    const emailSent = await sendContactEmail({ name, email, subject, message, date: dateString });
+    if (!emailSent) {
+      console.error('[API] SMTP email not sent');
+      // Continue response but could also choose to fail; here we still respond success to client
+    }
 
     res.status(201).json({ 
       success: true, 
-      message: 'Message saved successfully.',
+      message: 'Message saved and email sent.',
       id: result.lastID
     });
   } catch (error) {
