@@ -76,15 +76,15 @@ function authenticateToken(req, res, next) {
 
 // Get all projects
 app.get('/api/projects', async (req, res) => {
+  let client;
   try {
-    const db = await getDbConnection();
-    const projects = await db.all('SELECT * FROM projects');
-    await db.close();
-
+    client = await getDbConnection();
+    const result = await client.query('SELECT * FROM projects');
+    
     // Map projects to format arrays
-    const formattedProjects = projects.map(p => ({
+    const formattedProjects = result.rows.map(p => ({
       ...p,
-      isGallery: !!p.isGallery,
+      isGallery: !!p.isgallery, // PG lowercase columns
       tech: JSON.parse(p.tech || '[]'),
       images: JSON.parse(p.images || '[]')
     }));
@@ -93,32 +93,38 @@ app.get('/api/projects', async (req, res) => {
   } catch (error) {
     console.error('[API] Error fetching projects:', error);
     res.status(500).json({ error: 'Failed to fetch projects.' });
+  } finally {
+    if (client) client.release();
   }
 });
 
 // Get all skills
 app.get('/api/skills', async (req, res) => {
+  let client;
   try {
-    const db = await getDbConnection();
-    const skills = await db.all('SELECT * FROM skills');
-    await db.close();
-    res.json(skills);
+    client = await getDbConnection();
+    const result = await client.query('SELECT * FROM skills');
+    res.json(result.rows);
   } catch (error) {
     console.error('[API] Error fetching skills:', error);
     res.status(500).json({ error: 'Failed to fetch skills.' });
+  } finally {
+    if (client) client.release();
   }
 });
 
 // Get all experiences
 app.get('/api/experiences', async (req, res) => {
+  let client;
   try {
-    const db = await getDbConnection();
-    const experiences = await db.all('SELECT * FROM experiences ORDER BY id ASC');
-    await db.close();
-    res.json(experiences);
+    client = await getDbConnection();
+    const result = await client.query('SELECT * FROM experiences ORDER BY id ASC');
+    res.json(result.rows);
   } catch (error) {
     console.error('[API] Error fetching experiences:', error);
     res.status(500).json({ error: 'Failed to fetch experiences.' });
+  } finally {
+    if (client) client.release();
   }
 });
 
@@ -148,12 +154,12 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
   const { name, email, subject, message } = validation.data;
   const dateString = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kathmandu' });
 
-  let db;
+  let client;
   try {
-    db = await getDbConnection();
-    const result = await db.run(
+    client = await getDbConnection();
+    const result = await client.query(
       `INSERT INTO messages (name, email, subject, message, date, status) 
-       VALUES (?, ?, ?, ?, ?, 'unread')`,
+       VALUES ($1, $2, $3, $4, $5, 'unread') RETURNING id`,
       [name, email, subject, message, dateString]
     );
 
@@ -165,19 +171,13 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
     return res.status(201).json({
       success: true,
       message: 'Message saved and email sent.',
-      id: result.lastID
+      id: result.rows[0].id
     });
   } catch (error) {
     console.error('[API] Error saving contact message:', error);
     return res.status(500).json({ error: 'Failed to process contact request.' });
   } finally {
-    if (db) {
-      try {
-        await db.close();
-      } catch (closeError) {
-        console.error('[DB] Error closing database connection:', closeError);
-      }
-    }
+    if (client) client.release();
   }
 });
 
@@ -193,10 +193,11 @@ app.post('/api/admin/login', async (req, res) => {
     return res.status(400).json({ error: 'Username and password are required.' });
   }
 
+  let client;
   try {
-    const db = await getDbConnection();
-    const user = await db.get('SELECT * FROM users WHERE username = ?', [username]);
-    await db.close();
+    client = await getDbConnection();
+    const result = await client.query('SELECT * FROM users WHERE username = $1', [username]);
+    const user = result.rows[0];
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials.' });
@@ -218,19 +219,23 @@ app.post('/api/admin/login', async (req, res) => {
   } catch (error) {
     console.error('[API] Login error:', error);
     res.status(500).json({ error: 'Authentication failed.' });
+  } finally {
+    if (client) client.release();
   }
 });
 
 // Get inbox messages (Protected)
 app.get('/api/admin/messages', authenticateToken, async (req, res) => {
+  let client;
   try {
-    const db = await getDbConnection();
-    const messages = await db.all('SELECT * FROM messages ORDER BY id DESC');
-    await db.close();
-    res.json(messages);
+    client = await getDbConnection();
+    const result = await client.query('SELECT * FROM messages ORDER BY id DESC');
+    res.json(result.rows);
   } catch (error) {
     console.error('[API] Error fetching inbox:', error);
     res.status(500).json({ error: 'Failed to fetch messages.' });
+  } finally {
+    if (client) client.release();
   }
 });
 
@@ -243,14 +248,16 @@ app.patch('/api/admin/messages/:id', authenticateToken, async (req, res) => {
     return res.status(400).json({ error: 'Invalid status update.' });
   }
 
+  let client;
   try {
-    const db = await getDbConnection();
-    await db.run('UPDATE messages SET status = ? WHERE id = ?', [status, id]);
-    await db.close();
+    client = await getDbConnection();
+    await client.query('UPDATE messages SET status = $1 WHERE id = $2', [status, id]);
     res.json({ success: true, message: 'Message updated.' });
   } catch (error) {
     console.error('[API] Error updating message:', error);
     res.status(500).json({ error: 'Failed to update message.' });
+  } finally {
+    if (client) client.release();
   }
 });
 
@@ -258,14 +265,16 @@ app.patch('/api/admin/messages/:id', authenticateToken, async (req, res) => {
 app.delete('/api/admin/messages/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
 
+  let client;
   try {
-    const db = await getDbConnection();
-    await db.run('DELETE FROM messages WHERE id = ?', [id]);
-    await db.close();
+    client = await getDbConnection();
+    await client.query('DELETE FROM messages WHERE id = $1', [id]);
     res.json({ success: true, message: 'Message deleted.' });
   } catch (error) {
     console.error('[API] Error deleting message:', error);
     res.status(500).json({ error: 'Failed to delete message.' });
+  } finally {
+    if (client) client.release();
   }
 });
 

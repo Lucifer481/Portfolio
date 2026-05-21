@@ -49,7 +49,7 @@ const Admin = ({ onGoHome }) => {
       if (res.ok) {
         const data = await res.json();
         setMessages(data);
-        addTerminalLog('Successfully fetched visitor messages from sqlite database.');
+        addTerminalLog('Successfully fetched visitor messages from the database.');
       } else {
         if (res.status === 401 || res.status === 403) {
           handleLogout();
@@ -188,7 +188,7 @@ const Admin = ({ onGoHome }) => {
           'Available commands:\n' +
           '  help      - Display this information listing.\n' +
           '  clear     - Wipe terminal screen log history.\n' +
-          '  refresh   - Query the sqlite database for new items.\n' +
+          '  refresh   - Query the database for new items.\n' +
           '  status    - View system environment variables audit.\n' +
           '  logout    - Wipes token logs and exits the dashboard.\n' +
           '  whoami    - Display session user permissions info.'
@@ -198,12 +198,12 @@ const Admin = ({ onGoHome }) => {
         setTerminalHistory(['root@sushan:~# ']);
         break;
       case 'refresh':
-        addTerminalLog('Initiating SQLite select query sequence...');
+        addTerminalLog('Initiating database select query sequence...');
         fetchMessages();
         break;
       case 'status':
         addTerminalLog(
-          `SQLite Daemon: ACTIVE\n` +
+          `Database Daemon: ACTIVE\n` +
           `Port Routing: 5000\n` +
           `Session User: ${username || 'admin'}\n` +
           `SMTP Relay: Enabled\n` +
