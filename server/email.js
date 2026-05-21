@@ -42,39 +42,36 @@ ${message}
 `;
 
   try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${resendApiKey}`,
-        'Content-Type': 'application/json',
+    const nodemailer = require('nodemailer');
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT) || 587,
+      secure: false,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASSWORD,
       },
-      body: JSON.stringify({
-        from: resendFrom,
-        to: emailRecipient,
-        reply_to: email,
-        subject: `[Contact] ${subject}`,
-        text: textBody,
-        html: htmlBody,
-      }),
     });
 
-    if (!response.ok) {
-      const err = await response.text();
-      console.error('[Resend] Failed to send email:', err);
-      return false;
-    }
-    const data = await response.json();
-    console.log('[Resend] Email sent, id:', data?.id);
+    await transporter.sendMail({
+      from: process.env.SMTP_USER,
+      to: emailRecipient,
+      replyTo: email,
+      subject: `[Contact] ${subject}`,
+      text: textBody,
+      html: htmlBody,
+    });
+    console.log('[SMTP] Email sent successfully');
     return true;
   } catch (e) {
-    console.error('[Resend] Unexpected error while sending email:', e);
+    console.error('[SMTP] Unexpected error while sending email:', e);
     return false;
   }
 }
 
 
-export async function sendContactEmail({ name, email, subject, message, date }) {
-  const resendApiKey = process.env.RESEND_API_KEY;
+
+
   const resendFrom = process.env.RESEND_FROM; // verified sender address
   // Destination address for the email (your Gmail). Fallback to sender if not set.
   const emailRecipient = process.env.EMAIL_RECIPIENT || resendFrom;
