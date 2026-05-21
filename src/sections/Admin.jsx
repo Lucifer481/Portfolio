@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Terminal, Lock, User, RefreshCw, Trash2, Mail, CheckCircle, Clock, ChevronLeft, LogOut } from 'lucide-react';
+import { API_BASE } from '../config.js';
 
 const Admin = ({ onGoHome }) => {
   const [token, setToken] = useState(localStorage.getItem('adminToken') || '');
@@ -40,7 +41,7 @@ const Admin = ({ onGoHome }) => {
   const fetchMessages = async () => {
     setIsFetching(true);
     try {
-      const res = await fetch('/api/admin/messages', {
+      const res = await fetch(`${API_BASE}/api/admin/messages`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -83,7 +84,7 @@ const Admin = ({ onGoHome }) => {
     setLoginError('');
 
     try {
-      const res = await fetch('/api/admin/login', {
+      const res = await fetch(`${API_BASE}/api/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
@@ -123,7 +124,7 @@ const Admin = ({ onGoHome }) => {
   const toggleMessageStatus = async (id, currentStatus) => {
     const newStatus = currentStatus === 'read' ? 'unread' : 'read';
     try {
-      const res = await fetch(`/api/admin/messages/${id}`, {
+      const res = await fetch(`${API_BASE}/api/admin/messages/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -146,7 +147,7 @@ const Admin = ({ onGoHome }) => {
   const deleteMessage = async (id) => {
     if (!confirm('Are you sure you want to purge this record from database storage?')) return;
     try {
-      const res = await fetch(`/api/admin/messages/${id}`, {
+      const res = await fetch(`${API_BASE}/api/admin/messages/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
