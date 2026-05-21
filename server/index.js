@@ -146,33 +146,38 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
     return res.status(400).json({ error: 'Invalid input data.' });
   }
   const { name, email, subject, message } = validation.data;
-
   const dateString = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kathmandu' });
 
+  let db;
   try {
-    const db = await getDbConnection();
+    db = await getDbConnection();
     const result = await db.run(
       `INSERT INTO messages (name, email, subject, message, date, status) 
        VALUES (?, ?, ?, ?, ?, 'unread')`,
       [name, email, subject, message, dateString]
     );
-    await db.close();
 
-    // Trigger SMTP mailing and await its result
     const emailSent = await sendContactEmail({ name, email, subject, message, date: dateString });
     if (!emailSent) {
       console.error('[API] SMTP email not sent');
-      // Continue response but could also choose to fail; here we still respond success to client
     }
 
-    res.status(201).json({ 
-      success: true, 
+    return res.status(201).json({
+      success: true,
       message: 'Message saved and email sent.',
       id: result.lastID
     });
   } catch (error) {
     console.error('[API] Error saving contact message:', error);
-    res.status(500).json({ error: 'Failed to process contact request.' });
+    return res.status(500).json({ error: 'Failed to process contact request.' });
+  } finally {
+    if (db) {
+      try {
+        await db.close();
+      } catch (closeError) {
+        console.error('[DB] Error closing database connection:', closeError);
+      }
+    }
   }
 });
 
