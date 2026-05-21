@@ -15,15 +15,17 @@ export async function sendContactEmail({ name, email, subject, message, date }) 
 
   try {
     // Create reusable transporter object using the default SMTP transport
-    const transporter = nodemailer.createTransport({
-      host: smtpHost,
-      port: smtpPort,
-      secure: smtpPort === 465, // true for 465, false for other ports
-      auth: {
-        user: smtpUser,
-        pass: smtpPass,
-      },
-    });
+      const transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: smtpPort,
+        secure: smtpPort === 465, // true for 465, false for other ports
+        connectionTimeout: 5000, // 5 seconds
+        greetingTimeout: 5000, // 5 seconds
+        auth: {
+          user: smtpUser,
+          pass: smtpPass,
+        },
+      });
 
     // Email content formatting (using rich CSS design for a professional hacker alert style)
     const mailOptions = {
