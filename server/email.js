@@ -2,9 +2,9 @@ import { config } from 'dotenv';
 config();
 
 export async function sendContactEmail({ name, email, subject, message, date }) {
-  const resendApiKey = process.env.RESEND_API_KEY;
-  const resendFrom = process.env.RESEND_FROM; // verified sender address
-  const emailRecipient = process.env.EMAIL_RECIPIENT || resendFrom;
+  const resendApiKey = process.env.SMTP_PASSWORD;
+  const resendFrom = process.env.SMTP_USER; // verified sender address
+  const emailRecipient = process.env.SMTP_TO || resendFrom;
 
   if (!resendApiKey || !resendFrom || !emailRecipient) {
     console.warn('[Resend] Missing configuration – email not sent.');
