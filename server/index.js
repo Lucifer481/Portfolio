@@ -5,6 +5,9 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { getDbConnection, initDatabase } from './db.js';
 import { sendContactEmail } from './email.js';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import { z } from 'zod';
 
 dotenv.config();
 
@@ -24,7 +27,22 @@ const corsOptions = {
   optionsSuccessStatus: 200,
 };
 
+// Enforce HTTPS when behind proxy (Render forwards X-Forwarded-Proto)
+app.use((req, res, next) => {
+  if (req.headers['x-forwarded-proto'] !== 'https' && process.env.NODE_ENV === 'production') {
+    return res.redirect(`https://${req.headers.host}${req.url}`);
+  }
+  next();
+});
+
+// Ensure JWT secret is defined
+if (!process.env.JWT_SECRET) {
+  console.error('[CONFIG] Missing JWT_SECRET environment variable. Exiting.');
+  process.exit(1);
+}
+
 app.use(cors(corsOptions));
+app.use(helmet());
 app.use(express.json());
 
 // Initialize database tables and seed defaults
@@ -41,7 +59,7 @@ function authenticateToken(req, res, next) {
     return res.status(401).json({ error: 'Access token required.' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET || 'sushancybersecurityinboxsecretkey2026', (err, user) => {
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) {
       return res.status(403).json({ error: 'Invalid or expired token.' });
     }
@@ -102,13 +120,30 @@ app.get('/api/experiences', async (req, res) => {
   }
 });
 
-// Contact Form submission
-app.post('/api/contact', async (req, res) => {
-  const { name, email, subject, message } = req.body;
+// Rate limiter for contact submissions (5 per minute)
+const contactLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 5,
+  message: { error: 'Too many requests, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
-  if (!name || !email || !subject || !message) {
-    return res.status(400).json({ error: 'All fields are required.' });
+// Zod schema for contact validation
+const contactSchema = z.object({
+  name: z.string().min(1).max(100),
+  email: z.string().email(),
+  subject: z.string().min(1).max(150),
+  message: z.string().min(1).max(2000),
+});
+
+// Contact Form submission (apply limiter and validation)
+app.post('/api/contact', contactLimiter, async (req, res) => {
+  const validation = contactSchema.safeParse(req.body);
+  if (!validation.success) {
+    return res.status(400).json({ error: 'Invalid input data.' });
   }
+  const { name, email, subject, message } = validation.data;
 
   const dateString = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kathmandu' });
 
@@ -164,7 +199,7 @@ app.post('/api/admin/login', async (req, res) => {
     // Generate JWT
     const token = jwt.sign(
       { id: user.id, username: user.username },
-      process.env.JWT_SECRET || 'sushancybersecurityinboxsecretkey2026',
+      process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
 
@@ -221,6 +256,12 @@ app.delete('/api/admin/messages/:id', authenticateToken, async (req, res) => {
     console.error('[API] Error deleting message:', error);
     res.status(500).json({ error: 'Failed to delete message.' });
   }
+});
+
+// Generic error handling middleware (must be after all routes)
+app.use((err, req, res, next) => {
+  console.error('[ERROR]', err);
+  res.status(500).json({ error: 'Internal server error' });
 });
 
 // Start Server
